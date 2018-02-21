@@ -55,7 +55,7 @@ def cost(params, Y, R, num_features, learning_rate):
     error = np.multiply((X * Theta.T) - Y, R)
     sq_error = np.power(error, 2)
     reg_term = (learning_rate / 2) * (np.sum(np.power(Theta, 2)) + np.sum(np.power(X, 2)))
-    J = (1 / 2) * np.sum(sq_error) + reg_term
+    J = (np.sum(sq_error) + reg_term) / 2
     print J
     #gradients
     X_grad = (error * Theta) + (learning_rate * X)
@@ -68,7 +68,7 @@ def cost(params, Y, R, num_features, learning_rate):
 #J, grad = cost(params, Y, R, num_features, learning_rate)
 print "minimizing"
 #optimization
-fmin = minimize(fun=cost, x0=params, args=(Y, R, num_features, learning_rate), method='L-BFGS-B', jac=True, options={'maxiter': 100})
+fmin = minimize(fun=cost, x0=params, args=(Y, R, num_features, learning_rate), method='L-BFGS-B', jac=True, options={'maxiter': 1000})
 print "optimized"
 
 #prediction matrix
@@ -79,28 +79,50 @@ predictions = X * Theta.T
 
 # #prediction accuracy
 p = np.array(predictions)
-p = p.astype(int)
-np.savetxt("prediction_matrix.csv", p, delimiter=",")
-p = np.multiply(p, R)
-# # for i  in range(20):
-# #     for j in range(7):
-# #         if(p[i, j] > 5):
-# #             p[i, j] = 5
+p = np.round(p)
+# dict = {el:0 for el in range(500)}
 #
-accuracy_percent = np.mean(p == Y) * 100
+# for i  in range(10000):
+#     for j in range(53424):
+#         if p[i, j] < 500:
+#             dict[p[i, j]] = dict.get(p[i, j]) + 1
+#         else:
+#             print ">500"
+#
+# print dict
+
+np.savetxt("prediction_matrix.csv", p, delimiter=",")
+
+p = np.multiply(p, R)
+print "prediction accuracy"
+total = 0
+equal = 0
+for i  in range(10000):
+    for j in range(53424):
+        if(p[i, j] != 0):
+            if(p[i, j] > 5):
+                p[i, j] = 5
+            total = total + 1
+            if(p[i, j] == Y[i, j] or p[i, j] == Y[i, j]-1 or p[i, j] == Y[i, j]+1):
+                equal = equal + 1
+accuracy = equal * 100 / total
+print accuracy
+
+#
+# accuracy_percent = np.mean(p == Y) * 100
 # print p
 # print Y
-print accuracy_percent
+# print accuracy_percent
 
-#recommend books
-#to users who have rated
-ptemp = np.multiply(p, Q)
-def find_max(u, pred):
-    n = len(pred)
-    return (-pred).argsort()[:4]
-
-for u in range(7):
-    max_indices = find_max(u, p[:, u])
-    print max_indices
-
-#to users who have only read
+# #recommend books
+# #to users who have rated
+# ptemp = np.multiply(p, Q)
+# def find_max(u, pred):
+#     n = len(pred)
+#     return (-pred).argsort()[:4]
+#
+# for u in range(7):
+#     max_indices = find_max(u, p[:, u])
+#     print max_indices
+#
+# #to users who have only read
