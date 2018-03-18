@@ -28,7 +28,7 @@ print "n-d array"
 num_users = Y.shape[1]
 num_books = Y.shape[0]
 num_features = 10  #to be selected using learning curve
-learning_rate = 1.5
+reg_parameter = 1.5
 Y = np.matrix(Y)
 R = np.matrix(R)
 Q = np.matrix(Q)
@@ -41,8 +41,8 @@ Theta = np.random.random(size=(num_users, num_features))
 #Theta = np.matrix(Theta)
 params = np.concatenate((np.ravel(X), np.ravel(Theta)))
 #cost function and optimization
-def cost(params, Y, R, num_features, learning_rate):
-    #arguments: X Theta Y R num_users num_books num_features learning_rate
+def cost(params, Y, R, num_features, reg_parameter):
+    #arguments: X Theta Y R num_users num_books num_features reg_parameter
     #returns: J X_grad Theta_grad
     #reshape X and Theta
     X = np.matrix(np.reshape(params[:num_books * num_features], (num_books, num_features)))
@@ -54,44 +54,39 @@ def cost(params, Y, R, num_features, learning_rate):
     #cost
     error = np.multiply((X * Theta.T) - Y, R)
     sq_error = np.power(error, 2)
-    reg_term = (learning_rate / 2) * (np.sum(np.power(Theta, 2)) + np.sum(np.power(X, 2)))
+    reg_term = (reg_parameter / 2) * (np.sum(np.power(Theta, 2)) + np.sum(np.power(X, 2)))
     J = (np.sum(sq_error) + reg_term) / 2
     print J
     #gradients
-    X_grad = (error * Theta) + (learning_rate * X)
-    Theta_grad = (error.T * X) + (learning_rate * Theta)
+    X_grad = (error * Theta) + (reg_parameter * X)
+    Theta_grad = (error.T * X) + (reg_parameter * Theta)
     #unravel X_grad and Theta_grad into grad
     grad = np.concatenate((np.ravel(X_grad), np.ravel(Theta_grad)))
 
     return J, grad
 
-#J, grad = cost(params, Y, R, num_features, learning_rate)
+#J, grad = cost(params, Y, R, num_features, reg_parameter)
 print "minimizing"
 #optimization
-fmin = minimize(fun=cost, x0=params, args=(Y, R, num_features, learning_rate), method='L-BFGS-B', jac=True, options={'maxiter': 1000})
+fmin = minimize(fun=cost, x0=params, args=(Y, R, num_features, reg_parameter), method='L-BFGS-B', jac=True, options={'disp': True, 'maxiter': 1000})
 print "optimized"
+
+X = np.matrix(np.reshape(params[:num_books * num_features], (num_books, num_features)))
+Theta = np.matrix(np.reshape(params[num_books * num_features:], (num_users, num_features)))
+
+# save the feature matrix and parameter prediction_matrix
+np.savetxt("feature_matrix.csv", X, delimiter=",")
+np.savetxt("parameter_matrix.csv", Theta, delimiter=",")
 
 #prediction matrix
 predictions = np.zeros(shape=(num_books, num_users))
-X = np.matrix(np.reshape(params[:num_books * num_features], (num_books, num_features)))
-Theta = np.matrix(np.reshape(params[num_books * num_features:], (num_users, num_features)))
 predictions = X * Theta.T
 
 # #prediction accuracy
 p = np.array(predictions)
 p = np.round(p)
-# dict = {el:0 for el in range(500)}
-#
-# for i  in range(10000):
-#     for j in range(53424):
-#         if p[i, j] < 500:
-#             dict[p[i, j]] = dict.get(p[i, j]) + 1
-#         else:
-#             print ">500"
-#
-# print dict
 
-np.savetxt("prediction_matrix.csv", p, delimiter=",")
+# np.savetxt("prediction_matrix.csv", p, delimiter=",")
 
 p = np.multiply(p, R)
 print "prediction accuracy"
@@ -108,21 +103,14 @@ for i  in range(10000):
 accuracy = equal * 100 / total
 print accuracy
 
-#
-# accuracy_percent = np.mean(p == Y) * 100
-# print p
-# print Y
-# print accuracy_percent
 
-# #recommend books
-# #to users who have rated
-# ptemp = np.multiply(p, Q)
-# def find_max(u, pred):
-#     n = len(pred)
-#     return (-pred).argsort()[:4]
-#
-# for u in range(7):
-#     max_indices = find_max(u, p[:, u])
-#     print max_indices
-#
-# #to users who have only read
+#recommend books
+#to users who have rated
+ptemp = np.multiply(p, Q)
+def find_max(u, pred):
+    n = len(pred)
+    return (-pred).argsort()[:4]
+
+for u in range(7):
+    max_indices = find_max(u, p[:, u])
+    print max_indices
